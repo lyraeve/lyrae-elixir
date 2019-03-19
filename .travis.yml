@@ -1,0 +1,12 @@
+os: linux
+dist: xenial
+language: elixir
+elixir: 1.8
+
+branches:
+  only:
+    - master
+
+script:
+  - mix test
+  - mix escript.build
