@@ -1,7 +1,20 @@
 defmodule Lyrae do
   def main(args \\ []) do
     [head | _] = args
-    Lyrae.Finder.find_by_number(head, :javbus)
+    lyr = Lyrae.Finder.find_by_number(head, :javbus)
+
+    IO.puts("title: " <> lyr.title)
+    IO.puts("number: " <> lyr.number)
+    IO.puts("cover: " <> lyr.cover)
+    IO.puts("publish_at: " <> lyr.publish_at)
+    IO.puts("length: " <> lyr.length)
+    IO.puts("producer: " <> lyr.producer)
+    IO.puts("publisher: " <> lyr.publisher)
+    IO.puts("series: " <> lyr.series)
+    IO.puts("actors: ")
+    IO.puts("genres: ")
+    IO.puts("screenshots:")
+    for screenshot <- lyr.screenshots, do: IO.puts("  " <> screenshot)
   end
 end
 
@@ -51,18 +64,53 @@ defmodule Lyrae.Finder do
 end
 
 defmodule Lyrae.Finder.Javbus do
+  @spec crawl(String.t()) :: String.t()
+  @spec parse(tuple) :: Lyrae.Lyr.t()
+
   def find_by_number(number) do
-    HTTPoison.get("https://www.javbus.com/" <> number)
+    crawl(number)
     |> parse()
   end
 
-  @spec parse(tuple) :: Lyrae.Lyr.t()
+  def crawl(number), do: HTTPoison.get!("https://www.javbus.com/" <> number).body
 
-  def parse({:error, _}) do
-    IO.puts("ERROR")
+  def parse(body) do
+    %Lyrae.Lyr{
+      title: parse_title(body),
+      number: "",
+      cover: parse_cover(body),
+      publish_at: "",
+      length: "",
+      producer: "",
+      publisher: "",
+      series: "",
+      actors: [],
+      genres: [],
+      screenshots:
+        parse_screenshots(body)
+        |> build_screenshots()
+    }
   end
 
-  def parse({:ok, response}) do
-    response.body
+  def build_screenshots(parsed) do
+    for x <- parsed,
+        do:
+          Floki.attribute(x, "src")
+          |> hd()
+  end
+
+  def parse_title(body),
+    do:
+      Floki.find(body, "h3")
+      |> Floki.text()
+
+  def parse_cover(body),
+    do:
+      Floki.find(body, ".movie .screencap img")
+      |> Floki.attribute("src")
+      |> hd()
+
+  def parse_screenshots(body) do
+    Floki.find(body, "#sample-waterfall .photo-frame img")
   end
 end
