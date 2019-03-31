@@ -75,15 +75,17 @@ defmodule Lyrae.Finder.Javbus do
   def crawl(number), do: HTTPoison.get!("https://www.javbus.com/" <> number).body
 
   def parse(body) do
+    temp_list = parse_p(body)
+
     %Lyrae.Lyr{
       title: parse_title(body),
-      number: "",
+      number: parse_number(temp_list),
       cover: parse_cover(body),
-      publish_at: "",
-      length: "",
-      producer: "",
-      publisher: "",
-      series: "",
+      publish_at: parse_publish_at(temp_list),
+      length: parse_length(temp_list),
+      producer: parse_producer(temp_list),
+      publisher: parse_publisher(temp_list),
+      series: parse_series(temp_list),
       actors: [],
       genres: [],
       screenshots:
@@ -112,5 +114,37 @@ defmodule Lyrae.Finder.Javbus do
 
   def parse_screenshots(body) do
     Floki.find(body, "#sample-waterfall .photo-frame img")
+  end
+
+  def parse_number(list) do
+    find_keyword_value(list, "識別碼:") |> String.replace("識別碼:", "") |> String.trim()
+  end
+
+  def parse_publish_at(list) do
+    find_keyword_value(list, "發行日期:") |> String.replace("發行日期:", "") |> String.trim()
+  end
+
+  def parse_length(list) do
+    find_keyword_value(list, "長度:") |> String.replace("長度:", "") |> String.trim()
+  end
+
+  def parse_producer(list) do
+    find_keyword_value(list, "製作商:") |> String.replace("製作商:", "") |> String.trim()
+  end
+
+  def parse_publisher(list) do
+    find_keyword_value(list, "發行商:") |> String.replace("發行商:", "") |> String.trim()
+  end
+
+  def parse_series(list) do
+    find_keyword_value(list, "系列:") |> String.replace("系列:", "") |> String.trim()
+  end
+
+  def find_keyword_value(list, keyword) do
+    Enum.find(list, fn item -> String.contains?(item, keyword) end)
+  end
+
+  defp parse_p(body) do
+    for element <- Floki.find(body, ".movie .info p"), do: Floki.text(element)
   end
 end
