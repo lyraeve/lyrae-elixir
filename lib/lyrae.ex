@@ -43,18 +43,18 @@ defmodule Lyrae.Lyr do
   @type lyr_genres :: [binary | any]
   @type lyr_screenshots :: [binary | any]
   @type t :: %__MODULE__{
-          title: lyr_title,
-          number: lyr_number,
-          cover: lyr_cover,
-          publish_at: lyr_publish_at,
-          length: lyr_length,
-          producer: lyr_producer,
-          publisher: lyr_publisher,
-          series: lyr_series,
-          actors: lyr_actors,
-          genres: lyr_genres,
-          screenshots: lyr_screenshots
-        }
+               title: lyr_title,
+               number: lyr_number,
+               cover: lyr_cover,
+               publish_at: lyr_publish_at,
+               length: lyr_length,
+               producer: lyr_producer,
+               publisher: lyr_publisher,
+               series: lyr_series,
+               actors: lyr_actors,
+               genres: lyr_genres,
+               screenshots: lyr_screenshots
+             }
 end
 
 defmodule Lyrae.Finder do
@@ -95,53 +95,43 @@ defmodule Lyrae.Finder.Javbus do
   end
 
   def build_screenshots(parsed) do
-    for x <- parsed,
-        do:
-          Floki.attribute(x, "src")
-          |> hd()
-  end
-
-  def parse_title(body),
-    do:
-      Floki.find(body, "h3")
-      |> Floki.text()
-
-  def parse_cover(body),
-    do:
-      Floki.find(body, ".movie .screencap img")
-      |> Floki.attribute("src")
+    for x <- parsed do
+      Floki.attribute(x, "src")
       |> hd()
-
-  def parse_screenshots(body) do
-    Floki.find(body, "#sample-waterfall .photo-frame img")
+    end
   end
 
-  def parse_number(list) do
-    find_keyword_value(list, "識別碼:") |> String.replace("識別碼:", "") |> String.trim()
+  defp parse_title(body) do
+    Floki.find(body, "h3")
+    |> Floki.text()
   end
 
-  def parse_publish_at(list) do
-    find_keyword_value(list, "發行日期:") |> String.replace("發行日期:", "") |> String.trim()
+  defp parse_cover(body) do
+    Floki.find(body, ".movie .screencap img")
+    |> Floki.attribute("src")
+    |> hd()
   end
 
-  def parse_length(list) do
-    find_keyword_value(list, "長度:") |> String.replace("長度:", "") |> String.trim()
+  def parse_screenshots(body), do: find_screenshots(body)
+  def parse_number(list), do: normalize_keyword_field(list, "識別碼:")
+  def parse_publish_at(list), do: normalize_keyword_field(list, "發行日期:")
+  def parse_length(list), do: normalize_keyword_field(list, "長度:")
+  def parse_producer(list), do: normalize_keyword_field(list, "製作商:")
+  def parse_publisher(list), do: normalize_keyword_field(list, "發行商:")
+  def parse_series(list), do: normalize_keyword_field(list, "系列:")
+
+  defp normalize_keyword_field(list, keyword) do
+    find_keyword_value(list, keyword)
+    |> String.replace(keyword, "")
+    |> String.trim()
   end
 
-  def parse_producer(list) do
-    find_keyword_value(list, "製作商:") |> String.replace("製作商:", "") |> String.trim()
-  end
-
-  def parse_publisher(list) do
-    find_keyword_value(list, "發行商:") |> String.replace("發行商:", "") |> String.trim()
-  end
-
-  def parse_series(list) do
-    find_keyword_value(list, "系列:") |> String.replace("系列:", "") |> String.trim()
-  end
-
-  def find_keyword_value(list, keyword) do
+  defp find_keyword_value(list, keyword) do
     Enum.find(list, fn item -> String.contains?(item, keyword) end)
+  end
+
+  defp find_screenshots(body) do
+    Floki.find(body, "#sample-waterfall .photo-frame img")
   end
 
   defp parse_p(body) do
